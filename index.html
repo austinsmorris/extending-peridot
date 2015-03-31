@@ -6,7 +6,7 @@
 
   <title>Extending Peridot</title>
 
-<meta name="description" content="Customize your testing platform with plugins, scopes, events, reporters, and more!">
+<meta name="description" content="Customize your testing platform with events, plugins, reporters, scopes, and more!">
   <meta name="author" content="Austin Morris">
 
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -46,7 +46,7 @@
     <section>
       <h1>Extending Peridot</h1>
       <hr>
-      <p>Customize your testing platform with plugins, scopes, events, reporters, and more!</p>
+      <p>Customize your testing platform with events, plugins, reporters, scopes, and more!</p>
       <p>
         <small>
           <a href="https://github.com/austinsmorris">Austin Morris</a> / <a href="https://twitter.com/austinsmorris">@austinsmorris</a><br>
@@ -57,545 +57,592 @@
 
     <section>
       <section>
-        <h2>First the bad news...</h2>
+        <h2>A Quick Primer</h2>
       </section>
 
       <section>
-        <h2>No PHP</h2>
-      </section>
-
-      <section>
-        <h2>No DB</h2>
-        <p>(In the traditional sense...)</p>
-      </section>
-    </section>
-
-    <section>
-      <section>
-        <h2>Now the good news...</h2>
-      </section>
-
-      <section>
-        <h2>High Performance is not hard</h2>
-      </section>
-
-      <section>
-        <h2>High Performance = High Traffic</h2>
-      </section>
-
-      <section>
-        <h2>High Performance = High Availability</h2>
-      </section>
-    </section>
-
-    <section>
-      <section>
-        <h2>php</h2>
-        <p><strong>Problem: </strong> My PHP is too slow!</p>
-      </section>
-
-      <section>
-        <h2>Use the right version!</h2>
-      </section>
-
-      <section>
-        <h2>Use the newest version!</h2>
-        <p>(Or at least PHP 5.5)</p>
-      </section>
-
-      <section>
-        <h2>Try HHVM?</h2>
-        <ul>
-          <li>HHVM is an open-source virtual machine designed for executing programs written in Hack and PHP.</li>
-          <li>HHVM uses a just-in-time (JIT) compilation approach to achieve superior performance while maintaining the development flexibility that PHP provides.</li>
-          <li>Wicked fast!</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>PHP-NG (Next Generation)</h2><br>
-        <ul>
-          <li>Based on a refactored Zend Engine, PHP-NG is already merged into master and will be the basis for the major PHP release.</li>
-          <li>PHP-NG is already twice as fast as PHP 5.6.</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>Use bytecode cache!</h2>
-        <ul>
-          <li>OPcache for >= PHP 5.5</li>
-          <li><del>APC for <= PHP 5.4</del></li>
-        </ul>
-      </section>
-
-      <section>
-        <p>php.ini settings:</p>
-      <pre><code>
-        opcache.enable=1
-      </code></pre>
-        <ul>
-          <li>Turn it on.</li>
-        </ul>
+        <h4>describe/it</h4>
         <pre><code>
-          opcache.enable_cli=1
+          &lt;?php
+
+          describe('A thing', function () {
+            // I am a suite!
+
+            beforeEach(function () {
+              // Somebody set up us the bomb!
+            });
+
+            it('should do a thing', function () {
+              // I am a test!
+            });
+
+            // more it()...
+
+            afterEach(function () {
+              // Tear down!
+            });
+          });
         </code></pre>
+      </section>
+
+      <section>
+        <h4>Nested describes</h4>
+        <pre><code>
+          describe('A thing', function () {
+
+            beforeEach(function () {
+              // Somebody set up us the bomb!
+            });
+
+            context('in this context', function () {
+              // I am another suite!
+
+              beforeEach(function () {
+                // I only run in this context
+              });
+
+              it('should do a very specific thing', function () {
+                // Both beforeEach() functions were executed before me!
+              });
+            });
+          });
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Test execution:</h4>
         <ul>
-          <li>If you want it on the CLI.</li>
+          <li>There is a single global context (suite)</li>
+          <li>describe() and context() create suites</li>
+          <li>it() creates tests</li>
+          <li>Closure::bind() links tests (leaf) to suites (composite)</li>
+          <li>A test passes unless it throws an exception.</li>
         </ul>
       </section>
 
       <section>
-      <pre><code>
-        opcache.memory_consumption=128
-      </code></pre>
+        <h4>Peridot is a Symfony Console Application</h4>
+        <p><i>"The Console component eases the creation of beautiful and testable command line interfaces."</i></p>
+        <p><b>Abstractions for:</b></p>
         <ul>
-          <li>How much memory opcache will use (MB).</li>
-          <li>Check your usage with <code>opcache_get_status()</code>.</li>
-        </ul>
-      <pre><code>
-        opcache.interned_strings_buffer=8
-      </code></pre>
-        <ul>
-          <li>How much memory will be used to share immutable strings between processes (MB).</li>
-        </ul>
-      </section>
-
-      <section>
-      <pre><code>
-        opcache.max_accelerated_files=4000
-      </code></pre>
-        <ul>
-          <li>How many files (scripts) are cached.</li>
-          <li>How big is your code base?</li>
-        </ul>
-      <pre><code>
-        opcache.fast_shutdown=1
-      </code></pre>
-        <ul>
-          <li>Turn it on to speed up deconstruction (freeing memory) at the end of each request.</li>
-        </ul>
-      </section>
-
-      <section>
-      <pre><code>
-        opcache.revalidate_freq=60
-      </code></pre>
-        <ul>
-          <li>How often code files are checked for updates (s).</li>
-          <li>Ignore if you use...</li>
-        </ul>
-      <pre><code>
-        opcache.validate_timestamps=0
-      </code></pre>
-        <ul>
-          <li>Never check for updates.</li>
-          <li>Do this if your deployment (cap?) supports it.</li>
-          <li>Much safer then mixing old and new code for 60s.</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>Use php-fpm with...</h2>
-      </section>
-    </section>
-
-    <section>
-      <section>
-        <h2>nginx</h2>
-        <p><strong>Problem: </strong> My web server is too slow!</p>
-      </section>
-
-      <section>
-        <h2>nginx + php-fpm = rad!</h2>
-        <ul>
-          <li>apache + mod_php is so 2000-late.</li>
-          <li>nginx is fast and efficient.</li>
-          <li>php-fpm can be scaled to maximize hardware capability.</li>
-        </ul>
-      </section>
-
-      <section>
-        <p><code>nginx.conf</code></p>
-      <pre><code>
-        user austin admin;
-        worker_processes 1;
-
-        events {
-        multi_accept on;
-        worker_connections 1024;
-        }
-      </code></pre>
-      </section>
-
-      <section>
-        <p><code>nginx.conf</code> (cont.)</p>
-      <pre><code>
-        http {
-        sendfile on;
-        tcp_nopush on;
-        keepalive_timeout 65;
-        server_tokens off;
-        include mime.types;
-        default_type application/octet-stream;
-        access_log /usr/local/var/log/nginx/access.log;
-        error_log /usr/local/var/log/nginx/error.log;
-
-        upstream php-fpm-socket {
-        server unix:/tmp/php-fpm.sock;
-        }
-
-        include /usr/local/etc/nginx/sites-enabled/*;
-        }
-      </code></pre>
-      </section>
-
-      <section>
-        <p><code>sites-enabled/mysite</code></p>
-      <pre><code>
-        server {
-        listen 80;
-        server_name mysite.dev;
-        root /path/to/public/dir;
-        index index.php;
-
-        location / {
-        try_files $uri $uri/ /index.php?$query_string;
-        }
-
-        location ~ \.php$ {
-        fastcgi_pass php-fpm-socket;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
-        }
-        }
-      </code></pre>
-      </section>
-
-      <section>
-        <p><code>php-fpm.conf</code></p>
-      <pre><code>
-        [dev]
-        listen = /tmp/php-fpm.sock
-        pm = dynamic
-        pm.max_children = 100
-        pm.start_servers = 10
-        pm.min_spare_servers = 5
-        pm.max_spare_servers = 15
-        pm.max_requests = 1000
-        pm.status_path = /php_status
-      </code></pre>
-      </section>
-    </section>
-
-    <section>
-      <section>
-        <h2>haproxy</h2>
-        <p><strong>Problem: </strong> I only have one web server!</p>
-      </section>
-
-      <section>
-        <h2>haproxy is sweet!</h2>
-        <ul>
-          <li>Very fast and reliable.</li>
-          <li>Modest hardware can handle a large load.</li>
-          <li>Capable of layer 4 and layer 7 proxying.</li>
-          <li>De-facto standard open source load balancer.</li>
-        </ul>
-      </section>
-
-      <section>
-        <p><code>haprox.cfg</code></p>
-      <pre><code>
-        global
-        maxconn 50000
-        user haproxy
-        group haproxy
-        stats socket /tmp/haproxy
-        node lb1
-        nbproc 1
-        daemon
-
-        defaults
-        log global
-        retries 3
-        timeout connect 5000ms
-        timeout client 5000ms
-        timeout server 5000ms
-        maxconn 50000
-      </code></pre>
-      </section>
-
-      <section>
-        <p><code>haprox.cfg</code> (cont.)</p>
-      <pre><code>
-        frontend tcp_proxy
-        bind *:80
-        mode tcp
-        default_backend my-backend
-
-        backend my-backend
-        mode tcp
-        balance roundrobin
-        # option httpchk HEAD / HTTP/1.1\r\nHost:\ example.com
-        server my-server-1 10.0.2.2 check port 80 inter 1000
-        server my-server-2 10.0.2.3 check port 80 inter 1000
-      </code></pre>
-      </section>
-
-      <section>
-        <p><code>haprox.cfg</code> (cont.)</p>
-      <pre><code>
-        listen stats *:1936
-        mode http
-        stats enable
-        stats uri /
-        stats hide-version
-        stats auth Username:Password
-      </code></pre>
-      </section>
-
-      <section>
-        <h3>More tips...</h3>
-        <ul>
-          <li>Use keepalived to enable backup LBs.</li>
-          <li>Use DNS to point to multiple LBs.</li>
-          <li>Tune your OS (Linux):</li>
-          <ul>
-            <li>More connections and ports.</li>
-            <li>Tweak TCP time wait.</li>
-            <li>Remove soft and hard file limits.</li>
-          </ul>
+          <li>CLI arguments</li>
+          <li>CLI options</li>
+          <li>CLI output</li>
         </ul>
       </section>
     </section>
 
     <section>
       <section>
-        <h2>redis</h2>
-        <p><strong>Problem: </strong> I have more than one web server!</p>
+        <h2>In the beginning, Peridot was without form and void...</h2>
       </section>
 
       <section>
-        <h2>Redis is awesome!</h2>
-        <ul>
-          <li>In-memory key value store</li>
-          <li>Persist-to-disk</li>
-          <li>Easy setup and configuration</li>
-          <li>Excellent documentation</li>
-        </ul>
+        <h4>peridot.php</h4>
+        <p>Configure your PHP tests with <b>PHP!</b></p>
+        <p>Even this is configurable:</p>
+        <pre><code>$ vendor/bin/peridot -c foo/bar.php</code></pre>
+        <pre><code>$ vendor/bin/peridot --configuration foo/bar.php</code></pre>
       </section>
 
       <section>
-        <h2>Share your sessions</h2>
-        <ul>
-          <li>Sticky sessions cause hot spots</li>
-          <li>Use the phpredis extension with igbinary</li>
-        </ul>
-      <pre><code>
-        extension=igbinary.so
-        extension=redis.so
-      </code></pre>
-      </section>
+        <h4>peridot.php</h4>
+        <pre><code>
+          &lt;?php
 
-      <section>
-        <p>redis.conf</p>
-        <br><br>
-        <p>(demo for full effect)</p>
-      </section>
+          use Evenement\EventEmitterInterface;
 
-      <section>
-        <p>php.ini</p>
-      <pre><code>
-        session.save_handler = redis
-        session.save_path = "tcp://192.168.0.100:6379"
-      </code></pre>
-      </section>
-
-      <section>
-        <h2>But wait, there's more!</h2>
-      </section>
-
-      <section>
-        <h2>Userland cache</h2>
-        <ul>
-          <li>phpredis provides native access</li>
-          <li>Doctrine driver (using phpredis) for:</li>
-          <ul>
-            <li>Metadata cache</li>
-            <li>Query cache</li>
-            <li>Results cache</li>
-          </ul>
-        </ul>
-      </section>
-
-      <section>
-        <h2>Redis to the Resque!</h2>
-        <ul>
-          <li>Redis is the engine driving resque</li>
-          <li>Use a job queue for anything that is not part of the response</li>
-          <li>php-resque lets your write jobs in php</li>
-        </ul>
+          /**
+           * Configure peridot.
+           *
+           * @param EventEmitterInterface $eventEmitter
+           */
+          return function (EventEmitterInterface $eventEmitter) {
+            // Everything that is cool and rad goes here!
+          };
+        </code></pre>
       </section>
     </section>
 
     <section>
       <section>
-        <h2>varnish</h2>
-        <p><strong>Problem: </strong> I want more!</p>
+        <h2>Events!</h2>
       </section>
 
       <section>
-        <h2>Web Application Accelerator</h2>
-        <p>a.k.a Caching HTTP Reverse Proxy</p>
+        <h4>EventEmitter</h4>
+        <p>Peridot has a single application event manager driving and providing access to the entire testing lifecyle.</p>
+        <a href="https://github.com/igorw/evenement">Événement</a>
+        <pre><code>
+          interface EventEmitterInterface
+          {
+            public function on($event, callable $listener);
+            public function once($event, callable $listener);
+            public function removeListener($event, callable $listener);
+            public function removeAllListeners($event = null);
+            public function listeners($event);
+            public function emit($event, array $arguments = []);
+          }
+        </code></pre>
       </section>
 
       <section>
-        <ol>
-          <li>Send an HTTP Requst.</li>
-          <li>Varnish will fetch and return a response.</li>
-          <li>Resend the HTTP Request</li>
-          <li>Varnish will return a cached response.</li>
-        </ol>
-      </section>
-
-      <section>
-        <h2>Pros</h2>
+        <h4>Peridot Events</h4>
         <ul>
-          <li>In-memory (mostly) HTTP cache.</li>
-          <li>Wicked fast static content.</li>
-          <li>Can act as a reverse proxy.</li>
-          <li>Varnish Configuration Language</li>
+          <li>'peridot.start' - Define additional CLI args/options</li>
+          <li>'peridot.configure' - Override default config</li>
+          <li>'suite.start' - A suite starts</li>
+          <li>'test.passed' - A test passed</li>
+          <li>'test.failed' - A test failed</li>
+          <li><a href="http://peridot-php.github.io/events.html">more...</a></li>
         </ul>
       </section>
 
       <section>
-        <h2>Cons</h2>
+        <h4>peridot.php</h4>
+        <p>Set the default path:</p>
+        <pre><code>
+    use Evenement\EventEmitterInterface;
+    use Peridot\Console\Environment;
+
+    return function (EventEmitterInterface $eventEmitter) {
+      $eventEmitter->on('peridot.start', function (Environment $environment) {
+        $environment->getDefinition()->getArgument('path')->setDefault('specs');
+      });
+    };
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Create your own events!</h4>
+        <pre><code>
+    use Evenement\EventEmitterInterface;
+    use Peridot\Core\Test;
+
+    return function (EventEmitterInterface $eventEmitter) {
+      $eventEmitter->on('test.passed', function (Test $test) use ($eventEmitter) {
+        $eventEmitter->emit('wackyEvent', [$test]);
+      });
+
+      $eventEmitter->on('wackyEvent', function (Test $test) {
+        // do something wacky!
+      });
+    };
+        </code></pre>
+      </section>
+    </section>
+
+    <section>
+      <section>
+        <h2>Plugins!</h2>
+      </section>
+
+      <section>
+        <h4>What is a Peridot plugin?</h4>
         <ul>
-          <li>Must read HTTP (no SSL).</li>
-          <li>No persistence (with experimentation).</li>
-          <li>Tricky debugging.</li>
-          <li>Varnish Configuration Language</li>
+          <li>It's a thing that does a thing.</li>
+          <li>It makes Peridot do more that it can do without it.</li>
+          <li>It is added to the config file (peridot.php).</li>
+          <li>There is a "preferred" style.</li>
         </ul>
       </section>
 
       <section>
-        <p>/etc/default/varnish</p>
-      <pre><code>
-        # Should we start varnishd at boot?  Set to "no" to disable.
-        START=yes
+        <h4>MyPlugin</h4>
+        <pre><code>
+          class MyPlugin
+          {
+            protected $emitter;
 
-        # Maximum number of open files (for ulimit -n)
-        NFILES=131072
+            public function __construct(EventEmitterInterface $emitter)
+            {
+              $this->emitter = $emitter;
+              $this->listen();
+            }
 
-        # Maximum locked memory size (for ulimit -l)
-        MEMLOCK=82000
+            protected function listen()
+            {
+              $this->emitter->on('suite.start', [$this, 'onSuiteStart']);
+            }
 
-        DAEMON_OPTS="-a :80 \
-        -T localhost:6082 \
-        -S /etc/varnish/secret \
-        -f /etc/varnish/my.vcl \
-        -s malloc,256m"
-      </code></pre>
+            public function onSuiteStart(Suite $suite)
+            {
+              // do something when a suite starts
+            }
+          }
+        </code></pre>
       </section>
 
       <section>
-      <pre><code>
-        -s malloc,256m
-      </code></pre>
-        <ul>
-          <li>Use malloc if all of your cache will fit in memory.</li>
-        </ul>
-      <pre><code>
-        -s file,/tmp/varnish,500G
-      </code></pre>
-        <ul>
-          <li>Use file if it won't.</li>
-        </ul>
+        <h4>Register your plugin:</h4>
+        <pre><code>
+          use Evenement\EventEmitterInterface;
+
+          return function (EventEmitterInterface $eventEmitter) {
+            new MyPlugin($eventEmitter);
+          };
+        </code></pre>
       </section>
 
       <section>
-        <p>/etc/varnish/my.vcl</p>
-      <pre><code>
-        vcl 4.0;
+        <h4>Peridot Yo Plugin</h4>
+        <pre><code>
+          use Evenement\EventEmitterInterface;
+          use Peridot\Plugin\Yo\YoPlugin;
 
-        backend server1 {
-        .host = "192.168.0.100";
-        .port = "80";
-        }
-
-        backend server1 {
-        .host = "192.168.0.200";
-        .port = "80";
-        }
-
-        acl purge {
-        "192.168.0.200";
-        "192.168.0.100";
-        }
-
-        sub vcl_init {
-        new backends = directors.round_robin();
-        backends.add_backend(server1);
-        backends.add_backend(server2);
-        }
-      </code></pre>
+          return function (EventEmitterInterface $emitter) {
+            $yoPlugin = YoPlugin::register(
+              $emitter,
+              "your-yo-token",
+              ['USER1', 'USER2'],
+              'http://linktobuild.com'
+            );
+            $yoPlugin->setBehavior(YoPlugin::BEHAVIOR_ON_FAIL);
+          };
+        </code></pre>
       </section>
 
       <section>
-        <p>/etc/varnish/my.vcl (cont.)</p>
-      <pre><code>
-        sub vcl_recv {
+        <h4>Peridot Watcher Plugin</h4>
+        <pre><code>
+          use Evenement\EventEmitterInterface;
+          use Peridot\Plugin\Watcher\WatcherPlugin;
 
-        if (req.method == "PURGE") {
-        if (!client.ip ~ purge) {
-        return (synth(405, "Not allowed"));
-        }
-
-        return (purge);
-        }
-
-        if (req.http.Cache-Control ~ "no-cache") {
-        return (pass);
-        }
-
-        return (hash);
-        }
-      </code></pre>
+          return function(EventEmitterInterface $emitter) {
+            $watcher = new WatcherPlugin($emitter);
+            $watcher->track(__DIR__ . '/src');
+          };
+        </code></pre>
       </section>
 
       <section>
-        <p>/etc/varnish/my.vcl (cont.)</p>
-      <pre><code>
-        sub vcl_backend_response {
-        set beresp.ttl = 120s
-        }
-      </code></pre>
+        <h4>Peridot Concurrency Plugin</h4>
+        <pre><code>
+          use Evenement\EventEmitterInterface;
+          use Peridot\Concurrency\ConcurrencyPlugin;
+
+          return function (EventEmitterInterface $emitter) {
+            new ConcurrencyPlugin($emitter);
+          };
+        </code></pre>
+        <pre><code>
+          $ vendor/bin/peridot --concurrent
+        </code></pre>
+      </section>
+    </section>
+
+    <section>
+      <section>
+        <h2>Reporters!</h2>
       </section>
 
       <section>
-        <h2>Useful Tools</h2>
-        <ul>
-          <li>varnish cli</li>
-          <li>varnishadm</li>
-          <li>varnishhist</li>
-          <li>varnishlog</li>
-          <li>varnishncsa</li>
-          <li>varnishreplay</li>
-          <li>varnishsizes</li>
-          <li>varnishstat</li>
-          <li>varnishtest</li>
-          <li>varnishtop</li>
-        </ul>
+        <h4>Register with the 'peridot.reporters' event:</h4>
+        <pre><code>
+class DotReporterPlugin
+{
+  // ...
+
+  protected function listen()
+  {
+    $this->emitter->on('peridot.reporters', [$this, 'onPeridotReporters']);
+  }
+
+  public function onPeridotReporters(InputInterface $input, ReporterFactory $reporters)
+  {
+    $reporters->register('dot', 'dot matrix', 'Peridot\Reporter\Dot\DotReporter');
+  }
+}
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Listen to the test events:</h4>
+        <pre><code>
+      namespace Peridot\Reporter\Dot;
+
+      use Peridot\Reporter\AbstractBaseReporter;
+
+      class DotReporter extends AbstractBaseReporter
+      {
+        public function init()
+        {
+          $this->eventEmitter->on('test.passed', [$this, 'onTestPassed']);
+          $this->eventEmitter->on('test.failed', [$this, 'onTestFailed']);
+          $this->eventEmitter->on('test.pending', [$this, 'onTestPending']);
+          $this->eventEmitter->on('runner.end', [$this, 'onRunnerEnd']);
+        }
+      }
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Dot Reporter</h4>
+        <pre><code>
+          use Peridot\Reporter\Dot\DotReporterPlugin;
+
+          return function(EventEmitterInterface $emitter) {
+            new DotReporterPlugin($emitter);
+          };
+        </code></pre>
+        <pre><code>
+          $ vendor/bin/peridot -r dot
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Code Coverage Reporters</h4>
+        <pre><code>
+        use Evenement\EventEmitterInterface;
+        use Peridot\Reporter\CodeCoverageReporters;
+
+        return function (EventEmitterInterface $eventEmitter) {
+          (new CodeCoverageReporters($eventEmitter))->register();
+
+          $eventEmitter->on('code-coverage.start', function ($reporter) {
+            $reporter->addDirectoryToWhitelist(__DIR__ . '/src');
+          });
+        };
+        </code></pre>
+        <pre><code>
+        $ vendor/bin/peridot -r html-code-coverage --code-coverage-path coverage/
+        </code></pre>
+      </section>
+    </section>
+
+    <section>
+      <section>
+        <h2>Scopes!</h2>
+      </section>
+
+      <section>
+        <h4>Plugins can manipulate scope!</h4>
+        <pre><code>
+      class MyScopePlugin
+      {
+        // ...
+
+        protected function listen()
+        {
+          $this->emitter->on('suite.start', [$this, 'onSuiteStart']);
+        }
+
+        public function onSuiteStart(Suite $suite)
+        {
+          $suite->getScope()->peridotAddChildScope(new MyScope());
+        }
+      }
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Add things to $this:</h4>
+        <pre><code>
+          class MyScope
+          {
+            // tests can access $this->thingy
+            public $thingy;
+
+            // tests can call $this->doThingyMagic()
+            public function doThingyMagic()
+            {
+              // magic happens!
+            }
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Always available:</h4>
+        <pre><code>
+          use Evenement\EventEmitterInterface;
+
+          return function (EventEmitterInterface $eventEmitter) {
+            new MyScopePlugin($eventEmitter);
+          };
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Use on test by test basis:</h4>
+        <pre><code>
+          describe('A thing', function () {
+            $scope = new MyScope();
+            $this->peridotAddChildScope($scope);
+
+            it('should do a thing', function() {
+              $this->doThingyMagic()
+            });
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Prophecy Plugin</h4>
+        <pre><code>
+          describe('A thing', function() {
+            beforeEach(function () {
+              // get a \Prophecy\Prophet
+              $prophet = $this->getProphet()
+            )};
+          });
+        </code></pre>
+        <pre><code>
+          describe('My\Thing', function() {
+            it('should be a Thing', function() {
+              assert($this->subject->reveal() instanceof Thing);
+            });
+          });
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>HttpKernel Plugin</h4>
+        <pre><code>
+      describe('My API', function() {
+        describe('/my-route', function() {
+          it('should return data', function() {
+            $this->client->request('GET', '/my-route');
+            $data = json_decode($this->client->getResponse()->getContent(), true);
+
+            // assert($data blah blah blah...
+          });
+        });
+      });
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Doctrine Plugin</h4>
+        <pre><code>
+          use Evenement\EventEmitterInterface;
+          use Peridot\Plugin\Doctrine\DoctrinePlugin;
+          use Peridot\Plugin\Doctrine\EntityManager\EntityManagerService;
+
+          return function (EventEmitterInterface $eventEmitter) {
+            new DoctrinePlugin($eventEmitter, new EntityManagerService());
+          };
+        </code></pre>
+        <pre><code>
+          beforeEach(function () {
+            // I can create an entity manager!
+            $this->entityManager = $this->createEntityManager();
+            $this->repository = new MyRepository($this->entityManager);
+          });
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Pro Tip 1:</h4>
+        <p>Customize your entity manager creation</p>
+        <pre><code>
+  use Doctrine\DBAL\Types\Type;
+
+  Type::addType('datetimeutc', 'ASM\Doctrine\DBAL\Types\DateTimeUTCType');
+  $factory = function () {
+    // do something that creates an entity manager ..
+    return $entityManager;
+  };
+
+  $service = (new EntityManagerService())->setEntityManagerFactory($factory);
+  new DoctrinePlugin($eventEmitter, $service);
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Pro Tip 2:</h4>
+        <p>Copying is faster than creating</p>
+        <pre><code>
+          use Nelmio\Alice\Fixtures;
+          use Peridot\Plugin\Doctrine\EntityManager\SchemaService;
+
+          // create the initial sqlite db used for testing
+          $eventEmitter->on('runner.start', function () use ($factory) {
+            $entityManager = $factory();
+            $schemaService = new SchemaService($entityManager);
+            $schemaService->dropDatabase()->createDatabase();
+
+            Fixtures::load([__DIR__ . '/path/to/fixture.yml'], $entityManager);
+            // load more fixtures...
+
+            copy(__DIR__ . '/tmp/db.db', __DIR__ . '/tmp/clean.db');
+          });
+
+          // create a clean copy of the db before an entity manager is created
+          $eventEmitter->on('doctrine.entityManager.preCreate', function () {
+            copy(__DIR__ . '/tmp/clean.db', __DIR__ . '/tmp/db.db');
+          });
+        </code></pre>
+      </section>
+    </section>
+
+    <section>
+      <section>
+        <h2>More!</h2>
+      </section>
+
+      <section>
+        <h2>Leo!</h2>
+        <p>An assertion library to complement Peridot.</p>
+        <pre><code>
+          $ composer require peridot-php/leo:~1.0
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Assert</h4>
+        <pre><code>
+          use Peridot\Leo\Interfaces\Assert;
+
+          $assert = new Assert();
+          $assert->typeOf('string', 'hello', 'is string');
+          $assert->operator(5, '<', 6, 'should be less than');
+          $assert->isResource(tempfile());
+          $assert->throws(function() {
+            throw new Exception("exception");
+          }, 'Exception');
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Expect</h4>
+        <pre><code>
+          expect([1,2,3])->to->have->length(3);
+          expect($name)->to->be->a('string')
+          expect($object)->to->have->property('name', 'brian');
+          expect(function() {})->to->satisfy('is_callable');
+          expect(5)->to->be->above(4)
+          expect($num)->to->be->within(5, 10);
+          expect('hello')->to->match('/^he/');
+        </code></pre>
+      </section>
+
+      <section>
+        <h4>Extending Leo</h4>
+        <pre><code>
+          use Evenement\EventEmitterInterface;
+          use Peridot\Leo\HttpFoundation\LeoHttpFoundation;
+          use Peridot\Leo\Leo;
+
+          return function (EventEmitterInterface $eventEmitter) {
+            Leo::assertion()->extend(new LeoHttpFoundation());
+          };
+        </code></pre>
+        <pre><code>
+          expect($response)->to->allow(['POST', 'GET']);
+          expect($response)->to->have->status(200);
+          expect($response)->json->to->have->property('name');
+        </code></pre>
       </section>
     </section>
 
     <section>
       <h2>tl;dr</h2>
       <ul>
-        <li>Breakdown your architecture into components.</li>
-        <li>Pick components that are really good at what they do.</li>
-        <li>Step 3: Profit!</li>
+        <li>Peridot is extensible.</li>
+        <li>Peridot is flexible.</li>
+        <li>Peridot is fun-ible.</li>
+        <li>Everything else is dead (and an anti-pattern).</li>
       </ul>
     </section>
 
